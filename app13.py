@@ -61,6 +61,7 @@ conn.commit()
 imgsum = 10
 sleeptime = 5  # 表示時間
 countdown = 15 # 表示時間 + countdown = 制限時間
+timelimit = sleeptime + countdown
 image_folder = './2value/'
 blackImg = Image.open('black.png')
 
@@ -115,9 +116,9 @@ try:
 
             # データベースへ保存
             c.execute(f'INSERT INTO {user_name}(image_number,input_text,time,timelimit) VALUES (?, ?, ?, ?)',
-                      (imgIndex, input_text, elapsed_time, elapsed_time <= 10))
+                      (imgIndex, input_text, elapsed_time, elapsed_time <= timelimit))
             conn.commit()
-            if elapsed_time <= 10:
+            if elapsed_time <= timelimit:
                 st.success('保存完了')
             else:
                 st.warning('制限時間切れ')

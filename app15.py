@@ -73,6 +73,76 @@ import io
 
 # st.image('./demo/demo_last.png', width=400)
 
+def show_question(imgIndex):
+    showImg = st.empty()
+    # はじめは黒画像
+    showImg.image(blackImg)
+    # 追加: カウントダウンの表示
+    countdown_text = st.empty()
+    # 入力フォーム
+    input_text = st.text_input(f'({imgIndex})は何に見えますか？')
+
+    # 表示ボタンがクリックされたときにタイムスタンプを更新
+    st.session_state.timestamps[f'{imgIndex}']['start'] = time.time()
+    # カウントダウンの初期値を設定
+    st.session_state.timestamps[f'{imgIndex}']['timelimit'] = countdown
+    countdown_text.text(f'残り時間: {st.session_state.timestamps[f"{imgIndex}"]["timelimit"]:.1f} 秒')
+    
+    # 画像を表示
+    img = display_image(imgIndex)
+    showImg.image(img)
+    #time.sleep(sleeptime)
+    #showImg.image(blackImg)
+    
+    save_form = st.button(f'({imgIndex})の解答を保存')
+    
+    if save_form:
+        # タイムスタンプを更新
+        st.session_state.timestamps[f'{imgIndex}']['save'] = time.time()
+        st.write("ok")
+        # 解答にかかった時間を計算
+        elapsed_time = st.session_state.timestamps[f'{imgIndex}']['save'] - st.session_state.timestamps[f'{imgIndex}']['start']
+
+        # データベースへ保存
+        c.execute(f'INSERT INTO {user_name}(image_number,input_text,time,timelimit) VALUES (?, ?, ?, ?)',
+                (imgIndex, input_text, elapsed_time, elapsed_time <= timelimit))
+        conn.commit()
+        if elapsed_time <= timelimit:
+            st.success('保存完了')
+        else:
+            st.warning('制限時間切れ')
+
+    # カウントダウン
+    while st.session_state.timestamps[f'{imgIndex}']['timelimit'] > 0:
+        st.session_state.timestamps[f'{imgIndex}']['timelimit'] -= 0.1
+        countdown_text.text(f'アイコン表示　残り時間: {st.session_state.timestamps[f"{imgIndex}"]["timelimit"]:.1f} 秒')
+        time.sleep(0.1)
+
+    showImg.image(blackImg)
+
+input_text = st.text_input('は何に見えますか？')
+if input_text is not None:
+    input_time = time.time()
+    st.write(input_time)
+
+if 'flag' not in st.session_state:
+    st.session_state.flag = False
+if st.button("a"):
+    if st.session_state.flag==False:st.session_state.flag = True
+    else: st.session_state.flag=False
+
+if st.session_state.flag:
+    if st.button("b"):
+        st.write("ok")
+
+
+
+
+
+
+
+
+
 if st.checkbox("以上の内容に同意していただけたら、チェックを入れてください"):
     st.markdown("""
                 ---
@@ -100,10 +170,13 @@ conn.commit()
 # 画像表示のための準備
 imgsum = 10
 sleeptime = 5  # 表示時間
-countdown = 15 # 表示時間 + countdown = 制限時間
+countdown = 5 # 表示時間 + countdown = 制限時間
 timelimit = sleeptime + countdown
 image_folder = './2value/'
 blackImg = Image.open('black.png')
+
+if 'imgIndex' not in st.session_state:
+    st.session_state.imgIndex = 1
 
 # st.session_stateに解答時間と制限時間を用意する
 if 'timestamps' not in st.session_state:
@@ -116,70 +189,14 @@ def display_image(i):
 
 try:
     showImg = st.empty()
-    for imgIndex in range(1, imgsum + 1):
-        #showImg = st.empty()
-        # はじめは黒画像
-        showImg.image(blackImg)
-
-        # 追加: カウントダウンの表示
-        countdown_text = st.empty()
-
-        # # 入力フォーム
-        # input_text = st.text_input(f'({imgIndex})は何に見えますか？')
-
-        if st.sidebar.checkbox(f'({imgIndex})を表示'):
-            # 入力フォーム
-            input_text = st.text_input(f'({imgIndex})は何に見えますか？')
-
-            # 表示ボタンがクリックされたときにタイムスタンプを更新
-            st.session_state.timestamps[f'{imgIndex}']['start'] = time.time()
-            # カウントダウンの初期値を設定
-            st.session_state.timestamps[f'{imgIndex}']['timelimit'] = countdown
-            countdown_text.text(f'残り時間: {st.session_state.timestamps[f"{imgIndex}"]["timelimit"]:.1f} 秒')
-            
-            # 画像を表示
-            img = display_image(imgIndex)
-            showImg.image(img)
-            #time.sleep(sleeptime)
-            #showImg.image(blackImg)
-            
-            save_form = st.button(f'({imgIndex})の解答を保存')
-
-            # # カウントダウン
-            # while st.session_state.timestamps[f'{imgIndex}']['timelimit'] > 0:
-            #     st.session_state.timestamps[f'{imgIndex}']['timelimit'] -= 0.1
-            #     countdown_text.text(f'アイコン表示　残り時間: {st.session_state.timestamps[f"{imgIndex}"]["timelimit"]:.1f} 秒')
-            #     time.sleep(0.1)
-
-            # showImg.image(blackImg)
-
-            # 入力フォーム
-            #input_text = st.text_input(f'({imgIndex})は何に見えますか？')
-
-            if save_form:
-                # タイムスタンプを更新
-                st.session_state.timestamps[f'{imgIndex}']['save'] = time.time()
-                st.write("ok")
-                # 解答にかかった時間を計算
-                elapsed_time = st.session_state.timestamps[f'{imgIndex}']['save'] - st.session_state.timestamps[f'{imgIndex}']['start']
-
-                # データベースへ保存
-                c.execute(f'INSERT INTO {user_name}(image_number,input_text,time,timelimit) VALUES (?, ?, ?, ?)',
-                        (imgIndex, input_text, elapsed_time, elapsed_time <= timelimit))
-                conn.commit()
-                if elapsed_time <= timelimit:
-                    st.success('保存完了')
-                else:
-                    st.warning('制限時間切れ')
-            
-            # カウントダウン
-            while st.session_state.timestamps[f'{imgIndex}']['timelimit'] > 0:
-                st.session_state.timestamps[f'{imgIndex}']['timelimit'] -= 0.1
-                countdown_text.text(f'アイコン表示　残り時間: {st.session_state.timestamps[f"{imgIndex}"]["timelimit"]:.1f} 秒')
-                time.sleep(0.1)
-
-            showImg.image(blackImg)
     
+    if st.button("次へ"):
+        st.write(st.session_state.imgIndex)
+        show_question(st.session_state.imgIndex)
+        st.session_state.imgIndex += 1
+        st.write(st.session_state.imgIndex)
+    st.write(st.session_state.imgIndex)
+
     # 終了ボタンがクリックされた時にありがとうを表示
     if st.button('終了'):
         st.success('これで実験は終了です。ありがとうございました。')

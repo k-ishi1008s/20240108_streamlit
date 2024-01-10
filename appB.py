@@ -9,8 +9,6 @@ import io
 # タイトル
 st.header("pix2pixによって生成したピクトグラムについての評価実験B")
 
-st.header("pix2pixによって生成したピクトグラムについての評価実験A")
-
 st.markdown("""
             評価実験にご協力いただき、ありがとうございます。
             

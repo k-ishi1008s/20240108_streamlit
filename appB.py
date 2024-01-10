@@ -209,7 +209,7 @@ try:
         if data:
             # テーブル形式で表示
             if st.session_state.firstQ == False: st.warning('このユーザー名は既に使用されています')
-            st.table(data)
+            #st.table(data)
         elif st.session_state.firstQ == True:
             st.write('')
         else:

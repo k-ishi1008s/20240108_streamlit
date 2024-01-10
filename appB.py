@@ -76,32 +76,32 @@ st.markdown("""
             以下がデモ動画です
 """)
 
-
-
 st.video('./demo/demo.mov')
 
+user_name = None
 
-if st.checkbox("以上の内容に同意していただけたら、チェックを入れてください(下のエラー文はチェックを入れると消えます)"):
+if st.checkbox("以上の内容に同意していただけたら、チェックを入れてください"):
     st.markdown("""
                 ---
     """)
     # ユーザー名入力フォーム
-    user_name = st.text_input('ユーザー名をアルファベットで入力してください(入力するとエラー文が消えます)')
+    user_name = st.text_input('ユーザー名をアルファベット+数字４文字で入力してください','name')
 
 # データベース接続
 conn = sqlite3.connect('data_B.db')
 c = conn.cursor()
 
-# ユーザーごとのテーブルを作成
-c.execute(f'''
-    CREATE TABLE IF NOT EXISTS {user_name}(
-        image_number INTEGER,
-        input_text TEXT,
-        time REAL,
-        timelimit BOOLEAN  -- 追加: timelimit 列を追加 (True or False)
-    )
-''')
-conn.commit()
+if user_name is not None:
+    # ユーザーごとのテーブルを作成
+    c.execute(f'''
+        CREATE TABLE IF NOT EXISTS {user_name}(
+            image_number INTEGER,
+            input_text TEXT,
+            time REAL,
+            timelimit BOOLEAN  -- 追加: timelimit 列を追加 (True or False)
+        )
+    ''')
+    conn.commit()
 
 # 画像表示のための準備
 imgsum = 200
@@ -180,7 +180,7 @@ def show_question(imgIndex):
 try:
     showImg = st.empty()
 
-    if st.session_state.imgIndex == 101:
+    if st.session_state.imgIndex == 101 and user_name is not None:
         if st.button("始める"):
             if st.session_state.firstQ == False : st.session_state.firstQ = True
             # 表示ボタンがクリックされたときにタイムスタンプを更新
@@ -194,40 +194,41 @@ try:
         if st.button('終了'):
             st.success('これで実験は終了です。ありがとうございました。')
 
-    else:
-        if st.button(f'({st.session_state.imgIndex})を開始'):
+    elif user_name is not None:
+        if st.button(f'({st.session_state.imgIndex})を開始') :
             if st.session_state.otherQ == False : st.session_state.otherQ = True
             # 表示ボタンがクリックされたときにタイムスタンプを更新
             st.session_state.timestamps[f'{st.session_state.imgIndex}']['start'] = time.time()
             #st.write(st.session_state.timestamps[f'{st.session_state.imgIndex}']['start'])
         if st.session_state.otherQ:
             show_question(st.session_state.imgIndex)
-            
-    # データベースからデータを取得
-    data = c.execute(f'SELECT * FROM {user_name}').fetchall()
-    
-    # データを表示
-    if data:
-        # テーブル形式で表示
-        if st.session_state.firstQ == False: st.warning('このユーザー名は既に使用されています')
-        st.table(data)
-    elif st.session_state.firstQ == True:
-        st.write('')
-    else:
-        st.success('このユーザー名は使用可能です！')
-    
-    # Excelファイル生成
-    all_data = c.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';").fetchall()
-    excel_data = io.BytesIO()
 
-    with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
-        pd.DataFrame(columns=[]).to_excel(writer, index=False, sheet_name='EmptySheet', header=True)
+    if user_name is not None:       
+        # データベースからデータを取得
+        data = c.execute(f'SELECT * FROM {user_name}').fetchall()
+        
+        # データを表示
+        if data:
+            # テーブル形式で表示
+            if st.session_state.firstQ == False: st.warning('このユーザー名は既に使用されています')
+            st.table(data)
+        elif st.session_state.firstQ == True:
+            st.write('')
+        else:
+            st.success('このユーザー名は使用可能です！')
+        
+        # Excelファイル生成
+        all_data = c.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';").fetchall()
+        excel_data = io.BytesIO()
 
-        for table_name, in all_data:
-            user_df = pd.read_sql_query(f'SELECT * FROM {table_name}', conn)
-            user_df.to_excel(writer, index=False, sheet_name=table_name, header=True)
+        with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
+            pd.DataFrame(columns=[]).to_excel(writer, index=False, sheet_name='EmptySheet', header=True)
 
-    excel_data.seek(0)  # ファイルの先頭に戻す
+            for table_name, in all_data:
+                user_df = pd.read_sql_query(f'SELECT * FROM {table_name}', conn)
+                user_df.to_excel(writer, index=False, sheet_name=table_name, header=True)
+
+        excel_data.seek(0)  # ファイルの先頭に戻す
 
     # # ダウンロードボタンがクリックされたときにエクセルファイルを出力
     # if st.button('管理者用'):

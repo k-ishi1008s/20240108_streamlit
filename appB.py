@@ -86,7 +86,7 @@ if st.checkbox("以上の内容に同意していただけたら、チェック�
     user_name = st.text_input('ユーザー名をアルファベット+数字４文字で入力してください','name')
 
 # データベース接続
-conn = sqlite3.connect('data_B.db')
+conn = sqlite3.connect('data_B_20240121.db')
 c = conn.cursor()
 
 if user_name is not None:
@@ -106,7 +106,7 @@ imgsum = 200
 sleeptime = 5  # 表示時間
 countdown = 25  # 表示時間 + countdown = 制限時間
 timelimit = sleeptime + countdown
-image_folder = './imageB/'
+image_folder = './imageB_2value/'
 blackImg = Image.open('black.png')
 
 if 'imgIndex' not in st.session_state:
@@ -228,11 +228,11 @@ try:
 
         excel_data.seek(0)  # ファイルの先頭に戻す
 
-    # # ダウンロードボタンがクリックされたときにエクセルファイルを出力
-    # if st.button('管理者用'):
-    #     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    #     excel_filename = f'user_data_{current_time}.xlsx'
-    #     st.download_button(label='ダウンロード', data=excel_data, file_name=excel_filename, key='download_data')
+    # ダウンロードボタンがクリックされたときにエクセルファイルを出力
+    if st.button('管理者用(絶対に押さないでください)'):
+        current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        excel_filename = f'user_data_{current_time}.xlsx'
+        st.download_button(label='ダウンロード(絶対に押さないでください)', data=excel_data, file_name=excel_filename, key='download_data')
 
 finally:
     # データベースクローズ
